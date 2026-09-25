@@ -9,7 +9,7 @@ import ImagePlayground
 /// against the same on-device generative model that powers the system UI, so
 /// the photo never leaves the device.
 @available(iOS 18.4, macOS 15.4, *)
-public struct CorgiImageGenerator {
+public struct CorgiImageGenerator: Sendable {
 
     public enum GeneratorError: Error, LocalizedError {
         case unsupportedDevice

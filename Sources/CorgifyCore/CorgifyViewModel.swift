@@ -33,7 +33,6 @@ public final class CorgifyViewModel {
     }
 
     private let analyzer = FaceAnalyzer()
-    private let generator = CorgiImageGenerator()
 
     public init() {}
 
@@ -56,6 +55,10 @@ public final class CorgifyViewModel {
 
         state = .generating
         do {
+            // Constructed here rather than stored: a MainActor-isolated
+            // property cannot be sent to a concurrent method under Swift 6
+            // strict concurrency.
+            let generator = CorgiImageGenerator()
             generatedImage = try await generator.generate(corgi: corgi, sourceImage: photo)
             state = .finished
         } catch {
