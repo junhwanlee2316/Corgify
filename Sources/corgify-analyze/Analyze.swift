@@ -63,13 +63,23 @@ struct Analyze {
             }
         }
 
-        printRanges(measured)
+        let clipping = printRanges(measured)
 
         if measured.isEmpty {
             print("\nNo faces measured.")
             exit(1)
         }
         print("\nAnalyzed \(paths.count - failures)/\(paths.count) images.")
+
+        if !clipping.isEmpty {
+            // Exit non-zero so CI catches a range that no longer covers real
+            // faces, rather than silently producing identical corgis.
+            print("Clipping features: \(clipping.joined(separator: ", "))")
+            exit(1)
+        }
+        if failures > 0 {
+            exit(1)
+        }
     }
 
     static func record(_ store: inout [String: [Double]], _ key: String, _ value: Double) {
@@ -78,8 +88,13 @@ struct Analyze {
 
     /// Prints observed min/max per feature next to the ranges currently
     /// hardcoded in `CorgiFaceMapper.HumanRange`, flagging any that clip.
-    static func printRanges(_ measured: [String: [Double]]) {
-        guard !measured.isEmpty else { return }
+    ///
+    /// - Returns: names of features whose real spread falls outside the
+    ///   configured range, so the caller can fail the run.
+    @discardableResult
+    static func printRanges(_ measured: [String: [Double]]) -> [String] {
+        guard !measured.isEmpty else { return [] }
+        var clipping: [String] = []
 
         let configured: [String: ClosedRange<Double>] = [
             "aspectRatio": CorgiFaceMapper.HumanRange.aspectRatio,
@@ -101,6 +116,7 @@ struct Analyze {
             let clipsLow = lo < range.lowerBound
             let clipsHigh = hi > range.upperBound
             let status = clipsLow || clipsHigh ? "CLIPS" : "ok"
+            if clipsLow || clipsHigh { clipping.append(key) }
             print(String(
                 format: "%-16s %6.3f..%-6.3f   %6.3f..%-6.3f   %@",
                 (key as NSString).utf8String!,
@@ -109,6 +125,7 @@ struct Analyze {
                 status
             ))
         }
+        return clipping
     }
 
     static func loadImage(_ path: String) -> CGImage? {

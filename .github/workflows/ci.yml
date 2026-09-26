@@ -16,3 +16,9 @@ jobs:
       # XCTest and Swift Testing both require a full Xcode toolchain.
       - name: Verify mapping logic
         run: swift run corgify-verify
+      # Runs the real Vision pipeline so a regression in the landmark math or
+      # a range that starts clipping shows up in CI, not on a device.
+      - name: Validate against real photos
+        run: |
+          ./scripts/fetch-validation-photos.sh
+          swift run corgify-analyze .validation/*.jpg
