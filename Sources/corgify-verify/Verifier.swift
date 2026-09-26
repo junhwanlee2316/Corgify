@@ -76,18 +76,18 @@ struct Verifier {
         section("Human features drive the right corgi features")
 
         var thinBrows = FaceFeatures.neutral
-        thinBrows.browThickness = 0.35
+        thinBrows.browThickness = 0.42
         var thickBrows = FaceFeatures.neutral
-        thickBrows.browThickness = 0.75
+        thickBrows.browThickness = 0.60
         check(
             CorgiFaceMapper.map(thickBrows).earFlop > CorgiFaceMapper.map(thinBrows).earFlop,
             "thicker brows produce floppier ears"
         )
 
         var longFace = FaceFeatures.neutral
-        longFace.aspectRatio = 0.60
+        longFace.aspectRatio = 1.05
         var roundFace = FaceFeatures.neutral
-        roundFace.aspectRatio = 0.95
+        roundFace.aspectRatio = 1.40
         check(
             CorgiFaceMapper.map(longFace).snoutLength > CorgiFaceMapper.map(roundFace).snoutLength,
             "longer face produces a longer snout"
@@ -98,20 +98,26 @@ struct Verifier {
         )
 
         var squinting = FaceFeatures.neutral
-        squinting.eyeOpenness = 0.10
+        squinting.eyeOpenness = 0.24
         var wideEyed = FaceFeatures.neutral
-        wideEyed.eyeOpenness = 0.45
+        wideEyed.eyeOpenness = 0.40
         check(
             CorgiFaceMapper.map(wideEyed).eyeOpenness > CorgiFaceMapper.map(squinting).eyeOpenness,
             "squinting carries through"
         )
 
         var smiling = FaceFeatures.neutral
-        smiling.smileCurve = 0.9
+        smiling.smileCurve = 0.42
         var frowning = FaceFeatures.neutral
-        frowning.smileCurve = -0.4
+        frowning.smileCurve = -0.22
         check(CorgiFaceMapper.map(smiling).tongueOut, "a broad smile shows the tongue")
         check(!CorgiFaceMapper.map(frowning).tongueOut, "a frown does not show the tongue")
+        // Regression: a neutral expression once normalized just past the
+        // tongue threshold, giving deadpan portraits a lolling tongue.
+        check(
+            !CorgiFaceMapper.map(.neutral).tongueOut,
+            "a neutral expression does not show the tongue"
+        )
 
         var tilted = FaceFeatures.neutral
         tilted.rollDegrees = 12.5
@@ -155,15 +161,15 @@ struct Verifier {
         check(neutralPrompt.contains("Pembroke Welsh Corgi"), "prompt names the breed")
 
         var smiling = FaceFeatures.neutral
-        smiling.smileCurve = 0.95
+        smiling.smileCurve = 0.44
         check(
             CorgiPromptBuilder.prompt(for: CorgiFaceMapper.map(smiling)).contains("tongue out"),
             "smiling prompt mentions the tongue"
         )
 
         var flat = FaceFeatures.neutral
-        flat.smileCurve = -0.5
-        flat.mouthWidth = 0.25
+        flat.smileCurve = -0.25
+        flat.mouthWidth = 0.24
         check(
             !CorgiPromptBuilder.prompt(for: CorgiFaceMapper.map(flat)).contains("tongue out"),
             "neutral prompt does not claim the tongue is out"

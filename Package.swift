@@ -9,7 +9,8 @@ let package = Package(
     ],
     products: [
         .library(name: "CorgifyCore", targets: ["CorgifyCore"]),
-        .executable(name: "corgify-verify", targets: ["corgify-verify"])
+        .executable(name: "corgify-verify", targets: ["corgify-verify"]),
+        .executable(name: "corgify-analyze", targets: ["corgify-analyze"])
     ],
     targets: [
         .target(
@@ -23,6 +24,13 @@ let package = Package(
             name: "corgify-verify",
             dependencies: ["CorgifyCore"],
             path: "Sources/corgify-verify"
+        ),
+        // Runs the real Vision pipeline over photo files so the landmark math
+        // and the HumanRange constants can be checked against actual faces.
+        .executableTarget(
+            name: "corgify-analyze",
+            dependencies: ["CorgifyCore"],
+            path: "Sources/corgify-analyze"
         ),
         .testTarget(
             name: "CorgifyCoreTests",

@@ -23,9 +23,9 @@ final class CorgiFaceMapperTests: XCTestCase {
 
     func testThickerBrowsProduceFloppierEars() {
         var thin = FaceFeatures.neutral
-        thin.browThickness = 0.35
+        thin.browThickness = 0.42
         var thick = FaceFeatures.neutral
-        thick.browThickness = 0.75
+        thick.browThickness = 0.60
 
         XCTAssertGreaterThan(
             CorgiFaceMapper.map(thick).earFlop,
@@ -36,9 +36,9 @@ final class CorgiFaceMapperTests: XCTestCase {
     func testLongerFaceProducesLongerSnout() {
         // A lower aspect ratio means a taller, narrower face.
         var longFace = FaceFeatures.neutral
-        longFace.aspectRatio = 0.60
+        longFace.aspectRatio = 1.05
         var roundFace = FaceFeatures.neutral
-        roundFace.aspectRatio = 0.95
+        roundFace.aspectRatio = 1.40
 
         XCTAssertGreaterThan(
             CorgiFaceMapper.map(longFace).snoutLength,
@@ -48,9 +48,9 @@ final class CorgiFaceMapperTests: XCTestCase {
 
     func testWiderFaceProducesMoreCheekFluff() {
         var narrow = FaceFeatures.neutral
-        narrow.aspectRatio = 0.60
+        narrow.aspectRatio = 1.05
         var wide = FaceFeatures.neutral
-        wide.aspectRatio = 0.95
+        wide.aspectRatio = 1.40
 
         XCTAssertGreaterThan(
             CorgiFaceMapper.map(wide).cheekFluff,
@@ -60,9 +60,9 @@ final class CorgiFaceMapperTests: XCTestCase {
 
     func testBroadSmileShowsTongueAndFrownDoesNot() {
         var smiling = FaceFeatures.neutral
-        smiling.smileCurve = 0.9
+        smiling.smileCurve = 0.42
         var frowning = FaceFeatures.neutral
-        frowning.smileCurve = -0.4
+        frowning.smileCurve = -0.22
 
         XCTAssertTrue(CorgiFaceMapper.map(smiling).tongueOut)
         XCTAssertFalse(CorgiFaceMapper.map(frowning).tongueOut)
@@ -70,9 +70,9 @@ final class CorgiFaceMapperTests: XCTestCase {
 
     func testSquintCarriesThrough() {
         var squint = FaceFeatures.neutral
-        squint.eyeOpenness = 0.10
+        squint.eyeOpenness = 0.24
         var wide = FaceFeatures.neutral
-        wide.eyeOpenness = 0.45
+        wide.eyeOpenness = 0.40
 
         XCTAssertGreaterThan(
             CorgiFaceMapper.map(wide).eyeOpenness,
@@ -125,15 +125,15 @@ final class CorgiPromptBuilderTests: XCTestCase {
 
     func testSmilingPromptMentionsTongue() {
         var smiling = FaceFeatures.neutral
-        smiling.smileCurve = 0.95
+        smiling.smileCurve = 0.44
         let prompt = CorgiPromptBuilder.prompt(for: CorgiFaceMapper.map(smiling))
         XCTAssertTrue(prompt.contains("tongue out"))
     }
 
     func testNeutralPromptDoesNotClaimTongueIsOut() {
         var flat = FaceFeatures.neutral
-        flat.smileCurve = -0.5
-        flat.mouthWidth = 0.25
+        flat.smileCurve = -0.25
+        flat.mouthWidth = 0.24
         let prompt = CorgiPromptBuilder.prompt(for: CorgiFaceMapper.map(flat))
         XCTAssertFalse(prompt.contains("tongue out"))
     }
@@ -146,5 +146,14 @@ final class CorgiPromptBuilderTests: XCTestCase {
     func testLargeEarsAreMentioned() {
         XCTAssertTrue(CorgiPromptBuilder.earPhrase(flop: 0.1, size: 0.7).contains("large"))
         XCTAssertFalse(CorgiPromptBuilder.earPhrase(flop: 0.1, size: 0.4).contains("large"))
+    }
+}
+
+extension CorgiFaceMapperTests {
+
+    /// Regression: a neutral expression once normalized just past the tongue
+    /// threshold, giving deadpan portraits a lolling tongue.
+    func testNeutralExpressionDoesNotShowTongue() {
+        XCTAssertFalse(CorgiFaceMapper.map(.neutral).tongueOut)
     }
 }

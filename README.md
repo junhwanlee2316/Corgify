@@ -82,27 +82,63 @@ Sources/CorgifyCore/
 App/Corgify/
   CorgifyApp.swift            SwiftUI entry point
   CameraView.swift            AVFoundation capture
-Sources/corgify-verify/       dependency-free verification runner
+Sources/corgify-verify/       dependency-free verification runner (28 checks)
+Sources/corgify-analyze/      runs Vision over real photos, reports ranges
+scripts/                      fetch validation photos
 ```
+
+## Validating against real faces
+
+`FaceAnalyzer` has been run against real portraits, and doing so caught two
+bugs that unit tests could not:
+
+```bash
+./scripts/fetch-validation-photos.sh
+swift run corgify-analyze .validation/*.jpg
+```
+
+The tool prints every measurement, the resulting prompt, and an observed-vs-
+configured range table that flags any feature whose real spread falls outside
+`CorgiFaceMapper.HumanRange`:
+
+```
+feature          observed          configured        status
+aspectRatio       1.133..1.339     1.000..1.450    ok
+browThickness     0.465..0.563     0.400..0.620    ok
+eyeOpenness       0.288..0.366     0.220..0.420    ok
+```
+
+### What real photos revealed
+
+**Vision's `boundingBox` says nothing about face shape.** It is normalized to
+image dimensions, so `box.width / box.height` just re-encodes the photo's
+aspect ratio. On four test portraits it corrected to exactly 1.000 every time.
+Face proportion now comes from the jaw contour instead. Before this fix every
+face produced an identical corgi.
+
+**A neutral expression was showing its tongue.** Once `smileCurve` was
+calibrated to real data, a deadpan 0.0 normalized to 0.36 — just past the old
+0.35 tongue threshold. Raised to 0.60, with a regression check.
+
+The ranges come from a small sample. Re-run the tool on a larger, more varied
+set to tighten them; anything that clips is reported.
 
 ## Status
 
-Skeleton. The mapping, prompt building, and pipeline structure are implemented
-and verified (27 checks). The camera capture path and the Xcode app target are
-scaffolded but have not been run on a physical device — `ImageCreator` cannot
-be exercised in CI or the Simulator, so that step needs Apple Intelligence
-hardware to validate.
+The mapping, prompt building, Vision extraction, and pipeline structure are
+implemented and verified — 28 automated checks plus real-photo validation.
 
 ### Known gaps
 
-- The `FaceAnalyzer` landmark math is written against Vision's documented
-  coordinate conventions but has not been checked against real photos; the
-  normalization ranges in `CorgiFaceMapper.HumanRange` are reasoned estimates
-  and will want tuning once real landmark data is available.
+- `ImageCreator` has never been executed. It cannot run in CI or the
+  Simulator, so generation needs Apple Intelligence hardware (iPhone 16+) to
+  validate. Everything upstream of it is tested.
 - No Xcode project file is checked in. The app sources are present; the target
-  needs to be created (or an `.xcodeproj` generated) to ship to a device.
+  needs creating to deploy to a device.
 - `ImagePlaygroundConcept.image(_:)` is used to pass the source photo; confirm
   the exact concept API on your SDK version.
+- Validation used four portraits. The normalization ranges will want widening
+  as more faces are measured.
 
 ## Contributing
 

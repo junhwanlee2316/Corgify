@@ -4,3 +4,6 @@
 *.xcworkspace/xcuserdata/
 DerivedData/
 .DS_Store
+
+# Validation photos are fetched, not committed (see scripts/)
+.validation/*.jpg

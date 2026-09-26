@@ -72,15 +72,15 @@ public struct FaceFeatures: Equatable, Sendable {
     /// A neutral, front-facing reference face. Useful as a test baseline and
     /// as a fallback when landmark detection returns partial data.
     public static let neutral = FaceFeatures(
-        aspectRatio: 0.75,
-        eyeSpacing: 0.42,
-        eyeOpenness: 0.30,
+        aspectRatio: 1.20,
+        eyeSpacing: 0.36,
+        eyeOpenness: 0.33,
         eyeHeight: 0.42,
-        noseWidth: 0.24,
+        noseWidth: 0.19,
         noseHeight: 0.60,
-        mouthWidth: 0.38,
+        mouthWidth: 0.30,
         smileCurve: 0.0,
-        browThickness: 0.55,
+        browThickness: 0.51,
         rollDegrees: 0.0,
         yawDegrees: 0.0
     )

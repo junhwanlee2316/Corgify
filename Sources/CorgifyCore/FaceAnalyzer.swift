@@ -53,15 +53,21 @@ public struct FaceAnalyzer: Sendable {
             throw AnalyzerError.landmarksUnavailable
         }
 
+        // A degenerate bounding box means the observation is unusable, even
+        // though the face proportion itself now comes from landmarks.
         let box = observation.boundingBox
         guard box.width > 0, box.height > 0 else {
             throw AnalyzerError.landmarksUnavailable
         }
 
         var features = FaceFeatures.neutral
-        // Vision reports the box in normalized image coordinates, so the ratio
-        // of its own width to height is already resolution-independent.
-        features.aspectRatio = Double(box.width / box.height)
+
+        // Vision's bounding box is normalized to image dimensions, so
+        // box.width/box.height reflects the photo's aspect ratio rather than
+        // the face's -- on real photos it comes out square every time and
+        // measures nothing. Derive the proportion from landmarks instead:
+        // face width across the eyes versus eye-to-chin height.
+        features.aspectRatio = faceProportion(landmarks) ?? FaceFeatures.neutral.aspectRatio
 
         if let leftEye = landmarks.leftEye, let rightEye = landmarks.rightEye {
             let leftCenter = centroid(of: leftEye)
@@ -97,6 +103,42 @@ public struct FaceAnalyzer: Sendable {
     }
 
     // MARK: - Landmark geometry
+
+    /// Face width relative to height, measured from landmarks.
+    ///
+    /// Uses the face contour when available (it spans jaw to temples), and
+    /// falls back to eye span versus eye-to-mouth distance. Returns nil when
+    /// neither is measurable, so the caller can keep the neutral default
+    /// rather than fabricate a number.
+    func faceProportion(_ landmarks: VNFaceLandmarks2D) -> Double? {
+        if let contour = landmarks.faceContour {
+            let size = extent(of: contour)
+            if size.width > 0, size.height > 0 {
+                return Double(size.width / size.height)
+            }
+        }
+
+        guard
+            let leftEye = landmarks.leftEye,
+            let rightEye = landmarks.rightEye,
+            let mouth = landmarks.outerLips
+        else {
+            return nil
+        }
+
+        let leftCenter = centroid(of: leftEye)
+        let rightCenter = centroid(of: rightEye)
+        let mouthCenter = centroid(of: mouth)
+
+        let width = abs(rightCenter.x - leftCenter.x)
+        let eyeY = (leftCenter.y + rightCenter.y) / 2
+        let height = abs(eyeY - mouthCenter.y)
+        guard width > 0, height > 0 else { return nil }
+
+        // Eye-to-mouth spans roughly a third of face height, so scale it up to
+        // approximate the full face before taking the ratio.
+        return Double(width / (height * 2.4))
+    }
 
     func centroid(of region: VNFaceLandmarkRegion2D) -> CGPoint {
         let points = region.normalizedPoints

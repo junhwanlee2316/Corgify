@@ -27,17 +27,22 @@ public enum CorgiFaceMapper {
 
     /// Human measurement ranges used for normalization.
     ///
-    /// These come from the observed spread of Vision landmark output across
-    /// typical portrait photos, not from a formal anthropometric study.
-    /// Treat them as tunable constants.
+    /// These are calibrated against real Vision landmark output (see
+    /// `swift run corgify-analyze`), not guessed. `aspectRatio` in particular
+    /// is a jaw-contour width/height ratio, which runs above 1.0 because
+    /// Vision's face contour spans the jawline rather than the whole head.
+    ///
+    /// Re-run `corgify-analyze` on a larger, more varied photo set to tighten
+    /// these; the current values come from a small sample and the tool flags
+    /// any feature that clips.
     public enum HumanRange {
-        public static let aspectRatio: ClosedRange<Double> = 0.60...0.95
-        public static let eyeSpacing: ClosedRange<Double> = 0.30...0.55
-        public static let eyeOpenness: ClosedRange<Double> = 0.10...0.45
-        public static let noseWidth: ClosedRange<Double> = 0.15...0.35
-        public static let mouthWidth: ClosedRange<Double> = 0.25...0.55
-        public static let browThickness: ClosedRange<Double> = 0.35...0.75
-        public static let smileCurve: ClosedRange<Double> = -0.50...1.00
+        public static let aspectRatio: ClosedRange<Double> = 1.00...1.45
+        public static let eyeSpacing: ClosedRange<Double> = 0.30...0.42
+        public static let eyeOpenness: ClosedRange<Double> = 0.22...0.42
+        public static let noseWidth: ClosedRange<Double> = 0.15...0.26
+        public static let mouthWidth: ClosedRange<Double> = 0.24...0.40
+        public static let browThickness: ClosedRange<Double> = 0.40...0.62
+        public static let smileCurve: ClosedRange<Double> = -0.25...0.45
     }
 
     /// Corgi output ranges. Narrower than the human ranges on purpose: a corgi
@@ -53,7 +58,11 @@ public enum CorgiFaceMapper {
     }
 
     /// Smile strength at or above which the corgi's tongue appears.
-    public static let tongueThreshold: Double = 0.35
+    ///
+    /// Calibrated against real faces: a neutral expression normalizes to about
+    /// 0.36 under `HumanRange.smileCurve`, so the threshold sits well above
+    /// that to avoid giving deadpan portraits a lolling tongue.
+    public static let tongueThreshold: Double = 0.60
 
     /// Converts human facial geometry into corgi facial geometry.
     ///
