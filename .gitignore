@@ -7,3 +7,7 @@ DerivedData/
 
 # Validation photos are fetched, not committed (see scripts/)
 .validation/*.jpg
+
+# Xcode user state (the generated project itself is committed)
+Corgify.xcodeproj/project.xcworkspace/
+Corgify.xcodeproj/xcuserdata/

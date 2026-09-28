@@ -28,6 +28,7 @@ final class CameraViewController: UIViewController {
 
     private let session = AVCaptureSession()
     private let output = AVCapturePhotoOutput()
+    private let sessionQueue = DispatchQueue(label: "com.junhwanlee.corgify.session")
     private var previewLayer: AVCaptureVideoPreviewLayer?
 
     override func viewDidLoad() {
@@ -67,7 +68,10 @@ final class CameraViewController: UIViewController {
         view.layer.addSublayer(layer)
         previewLayer = layer
 
-        Task.detached { [session] in
+        // startRunning blocks, so it must stay off the main thread. A
+        // dedicated queue avoids sending the main-actor-isolated session into
+        // a detached task, which Swift 6 rejects as a data race.
+        sessionQueue.async { [session] in
             session.startRunning()
         }
     }
@@ -81,13 +85,18 @@ final class CameraViewController: UIViewController {
 @available(iOS 18.4, *)
 extension CameraViewController: AVCapturePhotoCaptureDelegate {
 
-    func photoOutput(
+    /// AVFoundation delivers this on a private queue, not the main actor, so
+    /// the method must be nonisolated and hop to the main actor before
+    /// touching any UI state.
+    nonisolated func photoOutput(
         _ output: AVCapturePhotoOutput,
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
         guard error == nil, let cgImage = photo.cgImageRepresentation() else { return }
-        onCapture?(cgImage)
+        Task { @MainActor [weak self] in
+            self?.onCapture?(cgImage)
+        }
     }
 }
 #endif
